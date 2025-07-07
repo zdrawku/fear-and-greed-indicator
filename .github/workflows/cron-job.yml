@@ -1,0 +1,24 @@
+name: Run Fear & Greed Bot
+
+on:
+  schedule:
+    - cron: '0 9, 16, 17, 18, 23 * * *' # same cron schedule as your code
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    - name: Install dependencies
+      run: npm install
+    - name: Run script
+      run: node src/notifier.js
+      env:
+        CMC_API_KEY: ${{ secrets.CMC_API_KEY }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}

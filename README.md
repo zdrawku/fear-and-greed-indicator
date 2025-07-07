@@ -20,13 +20,16 @@ Before running the project, ensure you have the following:
 ## Installation
 
 1. Clone the repository:
-   ```bash
-   git clone https://github.com/your-repo/fear-and-greed-indicator.git
-   cd fear-and-greed-indicator
+```bash
+git clone https://github.com/your-repo/fear-and-greed-indicator.git
+cd fear-and-greed-indicator
+``` 
+
 2. Install dependencies:
 ```
 npm i
 ```
+
 3. Create a .env file in the root directory and add the following environment variables:
 ```
 CMC_API_KEY=your_coinmarketcap_api_key
