@@ -3,7 +3,7 @@ name: Run Fear & Greed Bot
 on:
   schedule:
     - cron: '0 9,16,17,18,23 * * *'
-  workflow_dispatch:                # <-- This enables the manual run button
+  workflow_dispatch:
 
 jobs:
   run-script:
