@@ -1,3 +1,5 @@
+[![Run Fear & Greed Bot](https://github.com/zdrawku/fear-and-greed-indicator/actions/workflows/cron-job.yml/badge.svg)](https://github.com/zdrawku/fear-and-greed-indicator/actions/workflows/cron-job.yml)
+
 # Fear and Greed Indicator Notifier
 
 This project fetches the Fear & Greed Index and Bitcoin price data from the CoinMarketCap API and sends notifications via desktop and Telegram. It also schedules periodic notifications using a cron job.
