@@ -2,7 +2,7 @@ name: Run Fear & Greed Bot
 
 on:
   schedule:
-    - cron: '0 9, 16, 17, 18, 23 * * *' # same cron schedule as your code
+    - cron: '0 9,16,17,18,23 * * *'
 
 jobs:
   run-script:
