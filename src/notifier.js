@@ -2,9 +2,36 @@ require('dotenv').config();
 const axios = require('axios');
 const notifier = require('node-notifier');
 const cron = require('node-cron');
+const fs = require('fs');
+const path = require('path');
 
 const FandGindex_URL = `https://pro-api.coinmarketcap.com/v3/fear-and-greed/latest?CMC_PRO_API_KEY=${process.env.CMC_API_KEY}`;
 const BTC_URL = `https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=BTC&CMC_PRO_API_KEY=${process.env.CMC_API_KEY}`;
+const PRICE_CACHE_FILE = path.join(__dirname, '.price-cache.json');
+const PRICE_CHANGE_THRESHOLD = 2; // Only notify if change is more than 2%
+
+// Helper function to get previous price from cache
+function getPreviousPrice() {
+  try {
+    if (fs.existsSync(PRICE_CACHE_FILE)) {
+      const data = fs.readFileSync(PRICE_CACHE_FILE, 'utf-8');
+      const { price } = JSON.parse(data);
+      return price;
+    }
+  } catch (error) {
+    console.warn('⚠️ Could not read price cache:', error.message);
+  }
+  return null;
+}
+
+// Helper function to save current price to cache
+function savePriceToCache(price) {
+  try {
+    fs.writeFileSync(PRICE_CACHE_FILE, JSON.stringify({ price, timestamp: new Date().toISOString() }), 'utf-8');
+  } catch (error) {
+    console.warn('⚠️ Could not save price cache:', error.message);
+  }
+}
 
 // Function to fetch data and send notifications
 async function fetchAndNotify() {
@@ -24,6 +51,26 @@ async function fetchAndNotify() {
     const change24h = quote.percent_change_24h.toFixed(2);
     const change7d = quote.percent_change_7d.toFixed(2);
     const change30d = quote.percent_change_30d.toFixed(2);
+
+    // Check for significant price change (>2%)
+    const previousPrice = getPreviousPrice();
+    let priceChangePercent = 0;
+    let shouldNotify = false;
+    let priceChangeMessage = '';
+
+    if (previousPrice) {
+      priceChangePercent = ((BTCprice - previousPrice) / previousPrice * 100).toFixed(2);
+      const absPriceChange = Math.abs(parseFloat(priceChangePercent));
+
+      if (absPriceChange > PRICE_CHANGE_THRESHOLD) {
+        shouldNotify = true;
+        const direction = priceChangePercent > 0 ? '📈 UP' : '📉 DOWN';
+        priceChangeMessage = `\n⚡ *Price Change Alert*: ${direction} ${absPriceChange}% (from $${previousPrice} to $${BTCprice})`;
+      }
+    } else {
+      console.log('📝 First run - no previous price data to compare');
+      savePriceToCache(BTCprice);
+    }
 
     const volume24h = Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 2 }).format(quote.volume_24h);
     const volumeChange24h = quote.volume_change_24h.toFixed(2);
@@ -50,14 +97,23 @@ async function fetchAndNotify() {
 🎯 Dominance: ${marketCapDominance}%
 🔁 Circulating Supply: ${circulatingSupply} / ${maxSupply}
 
-💡 ${suggestion}
+💡 ${suggestion}${priceChangeMessage}
 `.trim();
 
     console.log(`${message} \n\nAt ${new Date().toLocaleString()}`);
 
+    // Save the current price to cache for next comparison
+    savePriceToCache(BTCprice);
+
+    // Only send notifications if there's a significant price change (>2%)
+    if (!shouldNotify && previousPrice) {
+      console.log(`ℹ️ Price change ${Math.abs(parseFloat(priceChangePercent))}% is below ${PRICE_CHANGE_THRESHOLD}% threshold. Skipping notification.`);
+      return;
+    }
+
     notifier.notify({
       title: 'Fear & Greed Alert',
-      message: `Fear & Greed: ${fgValue} (${fgClass}), BTC: $${BTCprice}`,
+      message: `Fear & Greed: ${fgValue} (${fgClass}), BTC: $${BTCprice}${priceChangePercent ? ` (${priceChangePercent > 0 ? '+' : ''}${priceChangePercent}%)` : ''}`,
       sound: true,
     });
 
@@ -79,7 +135,3 @@ async function fetchAndNotify() {
 
 // For testing - Run once now to test
 fetchAndNotify();
-
-// Schedule the cron job normally
-// Runs at 9 AM, 12 PM, 6 PM, 8 PM, and 11 PM every day
-// cron.schedule('0 9,12,18,20,23 * * *', fetchAndNotify);
