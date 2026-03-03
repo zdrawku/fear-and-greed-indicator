@@ -133,7 +133,3 @@ ${tavexSection}
 
 // For testing - Run once now to test
 fetchAndNotify();
-
-// Schedule the cron job normally
-// Runs at 9 AM, 12 PM, 6 PM, 8 PM, and 11 PM every day
-// cron.schedule('0 9,12,18,20,23 * * *', fetchAndNotify);
