@@ -72,36 +72,37 @@ async function fetchAndNotify() {
     // Build Tavex gold bar section
     let tavexSection = '';
     if (tavexData) {
-      tavexSection = `\n🥇 *Gold 1g Bar (Tavex)*: ${tavexData.sellPrice} € (sell)`;
+      tavexSection = `🥇 *Gold 1g Bar (Tavex)*: ${tavexData.sellPrice} € (sell)`;
       if (tavexData.buybackPrice != null) {
         tavexSection += ` / ${tavexData.buybackPrice} € (buyback)`;
       }
       if (tavexData.spread != null) {
-        tavexSection += `\n📊 Spread: ${tavexData.spread}%`;
+        tavexSection += `\n☯️ Spread: ${tavexData.spread}%`;
       }
     }
 
     const message = `
 📊 *Fear & Greed Index*: ${fgValue} — _${fgClass}_
 
+🅱️ *Bitcoin Price*: $${BTCprice}
+${tavexSection}
+📊 *Gold Price*: $${GOLDprice}
+🥈 *Silver Price*: $${SILVERprice}
+------------------
 💰 *Bitcoin Price*: $${BTCprice}
 ↔️ 24h: ${btcChange24h}% | 📈 7d: ${btcChange7d}% | 📅 30d: ${btcChange30d}%
-🔄 Volume (24h): $${btcVolume24h} (${btcVolumeChange24h}%)
 🏦 Market Cap: $${btcMarketCap}
 🎯 Dominance: ${marketCapDominance}%
 🔁 Circulating Supply: ${circulatingSupply} / ${maxSupply}
-${tavexSection}
 
 💡 ${suggestion}
 ------------------
-🪙 *Gold Price*: $${GOLDprice}
+📊 *Gold Price*: $${GOLDprice}
 ↔️ 24h: ${goldChange24h}% | 📈 7d: ${goldChange7d}% | 📅 30d: ${goldChange30d}%
-🔄 Volume (24h): $${goldVolume24h} (${goldVolumeChange24h}%)
 🏦 Market Cap: $${goldMarketCap}
-
+------------------
 🥈 *Silver Price*: $${SILVERprice}
 ↔️ 24h: ${silverChange24h}% | 📈 7d: ${silverChange7d}% | 📅 30d: ${silverChange30d}%
-🔄 Volume (24h): $${silverVolume24h} (${silverVolumeChange24h}%)
 🏦 Market Cap: $${silverMarketCap}
 
 `.trim();
