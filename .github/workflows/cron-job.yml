@@ -2,7 +2,7 @@ name: Run Fear & Greed Bot
 
 on:
   schedule:
-    - cron: '0 5,19 * * *' # Runs at 5 AM and 7 PM UTC, or for Bulgarian time: 9 AM and 2200 PM EEST
+    - cron: '0 19 * * *' # Runs at 7 PM UTC, or for Bulgarian time: 2200 PM EEST
   workflow_dispatch:
 
 jobs:
