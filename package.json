@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node src/notifier.js",
+    "cars": "node src/carNotifier.js",
+    "cars:dry": "node src/carNotifier.js --dry-run --always",
+    "test": "node test/run-tests.js"
   },
   "keywords": [],
   "author": "",
@@ -14,6 +17,7 @@
     "cheerio": "^1.2.0",
     "dotenv": "^17.0.1",
     "node-cron": "^4.2.0",
-    "node-notifier": "^10.0.1"
+    "node-notifier": "^10.0.1",
+    "playwright": "^1.49.0"
   }
 }
