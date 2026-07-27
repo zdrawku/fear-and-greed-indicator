@@ -1,0 +1,62 @@
+name: PHEV SUV Listing Notifier
+
+on:
+  schedule:
+    # 05:00 and 15:00 UTC = 08:00 and 18:00 Bulgarian summer time (EEST, UTC+3).
+    # In winter (EET, UTC+2) these land at 07:00 and 17:00 — adjust if that matters.
+    - cron: '0 5,15 * * *'
+  workflow_dispatch:
+
+# Needed so the job can commit the updated state file back to the repo.
+permissions:
+  contents: write
+
+jobs:
+  check-listings:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      # Only Chromium, and only its own deps — the full `playwright install`
+      # pulls Firefox and WebKit too, which this job never launches.
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Chromium for Playwright
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Chromium system deps (cached browser)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Check listings and notify
+        run: node src/carNotifier.js
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+      - name: Persist seen listings
+        run: |
+          if [[ -n "$(git status --porcelain data/seen-listings.json)" ]]; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add data/seen-listings.json
+            git commit -m "chore: update seen car listings [skip ci]"
+            git push
+          else
+            echo "No listing changes to persist."
+          fi
