@@ -1,7 +1,14 @@
-const { CRITERIA } = require('./config');
+const { CRITERIA, WANTED_MODELS } = require('./config');
 
 /** 150000 -> "150 000" */
 const num = (val) => (val == null ? '?' : Intl.NumberFormat('bg-BG').format(val));
+
+/** Renders any per-model minYear overrides so the header doesn't silently lie about Santa Fe. */
+function minYearExceptionsText() {
+  const exceptions = WANTED_MODELS.filter((m) => m.minYear != null && m.minYear !== CRITERIA.minYear);
+  if (exceptions.length === 0) return '';
+  return ` (${exceptions.map((m) => `${m.model}: от ${m.minYear} г.`).join(', ')})`;
+}
 
 function formatListing(listing) {
   const parts = [
@@ -49,7 +56,7 @@ function buildMessage(
     return null;
   }
 
-  const header = `🔎 *PHEV SUV проверка* — до ${num(CRITERIA.maxPriceEur)} €, под ${num(CRITERIA.maxMileageKm)} км, от ${CRITERIA.minYear} г.`;
+  const header = `🔎 *PHEV SUV проверка* — до ${num(CRITERIA.maxPriceEur)} €, под ${num(CRITERIA.maxMileageKm)} км, от ${CRITERIA.minYear} г.${minYearExceptionsText()}`;
   const blocks = [header];
 
   if (partial) {

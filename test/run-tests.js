@@ -47,10 +47,16 @@ group('normalize', () => {
   check(matchWantedModel('Honda CR-V e:PHEV')?.model === 'CR-V', 'matches CR-V');
   check(matchWantedModel('Škoda Octavia Estate') === null, 'rejects Octavia');
   check(matchWantedModel('HYUNDAI i20 BUSINESS') === null, 'rejects i20');
+
+  // Santa Fe carries a per-model minYear override (2024, the redesigned
+  // generation); other models fall back to the global CRITERIA.minYear.
+  check(matchWantedModel('Hyundai Santa Fe').minYear === 2024, 'Santa Fe carries minYear override');
+  check(matchWantedModel('BMW X5').minYear === undefined, 'X5 has no per-model override');
 });
 
 // ---------------------------------------------------------------- mobile.bg
 const mobileBg = require('../src/carListings/sources/mobileBg');
+const { applyCriteria } = require('../src/carListings/criteria');
 
 const MOBILE_BG_FIXTURE = `
 <div class="ads2023">
@@ -91,11 +97,21 @@ const MOBILE_BG_FIXTURE = `
       <div class="seller"><div class="sInfo"><div class="name">ETIKA AUTO</div><div class="location">обл. Пазарджик</div></div></div>
     </div>
   </div>
+  <div class="item" id="ida21782991948283248">
+    <div class="text">
+      <div class="zaglavie">
+        <a class="title saveSlink" href="//www.mobile.bg/obiava-21782991948283248-santa-fe">Hyundai Santa fe 1.6 T-GDI Plug-In Hybrid AWD</a>
+        <div class="price">28 990 €56 699.51 лв.</div>
+      </div>
+      <div class="params">април 2022 г. 126 000 км Черен Plug-in хибрид 265 к.с. Евро 6 13.8 kWh Автоматична Джип</div>
+      <div class="seller"><div class="sInfo"><div class="name"></div><div class="location">обл. София, гр. София</div></div></div>
+    </div>
+  </div>
 </div>`;
 
 group('mobile.bg parser', () => {
   const rows = mobileBg.parseSearchHtml(MOBILE_BG_FIXTURE, 'test');
-  check(rows.length === 3, 'parses all three items', `got ${rows.length}`);
+  check(rows.length === 4, 'parses all four items', `got ${rows.length}`);
 
   const bmw = rows[0];
   check(bmw.adId === '21775491484749803', 'extracts adId from element id');
@@ -113,6 +129,12 @@ group('mobile.bg parser', () => {
   check(kia.brand === 'Kia' && kia.model === 'Sorento', 'maps to Kia Sorento');
 
   check(rows[2].unavailable === true, 'flags ПРОДАДЕНА as unavailable');
+
+  const santaFe = rows[3];
+  check(santaFe.brand === 'Hyundai' && santaFe.model === 'Santa Fe', 'maps title text to Hyundai Santa Fe');
+  check(santaFe.year === 2022, 'parses 2022 year for the Santa Fe ad');
+  check(santaFe.minYear === 2024, 'mobile.bg listings carry the Santa Fe minYear override too');
+  check(applyCriteria(santaFe).passes === false, 'a 2022 Santa Fe from mobile.bg fails the 2024 override');
 });
 
 // ---------------------------------------------------------------- Škoda
@@ -177,11 +199,16 @@ const HYUNDAI_FIXTURE = `
       data-regdate_value="20230415" data-mileage_value="70 500" data-price_value="33000">
     <div class="info"><h3>HYUNDAI SANTA FE</h3><a class="details" href="https://hyundai.bg/upotrebyavani-avtomobili/santa-fe-lux/">Детайли</a></div>
   </li>
+  <li class="hidden-car" data-car_id="32005" data-manufacturer_level1_value="HYUNDAI"
+      data-model_level2_value="SANTA FE" data-fueltype_value="Плъгин хибрид"
+      data-regdate_value="20240610" data-mileage_value="15 000" data-price_value="34000">
+    <div class="info"><h3>HYUNDAI SANTA FE</h3><a class="details" href="https://hyundai.bg/upotrebyavani-avtomobili/santa-fe-2024/">Детайли</a></div>
+  </li>
 </ul>`;
 
 group('Hyundai parser', () => {
   const rows = hyundai.parseListingHtml(HYUNDAI_FIXTURE);
-  check(rows.length === 3, 'parses all cards including non-target ones', `got ${rows.length}`);
+  check(rows.length === 4, 'parses all cards including non-target ones', `got ${rows.length}`);
 
   const i20 = rows[0];
   check(i20.model === null, 'i20 is not a wanted model');
@@ -195,8 +222,16 @@ group('Hyundai parser', () => {
   check(reserved.isPlugInHybrid === true, 'detects "Плъгин хибрид"');
   check(reserved.unavailable === true, 'РЕЗЕРВИРАН badge flags unavailable');
   check(reserved.url.includes('santa-fe-premium'), 'reads details link');
+  check(reserved.minYear === 2024, 'carries Santa Fe minYear override');
 
-  check(rows[2].unavailable === false, 'card without badge stays available');
+  const santaFe2023 = rows[2];
+  check(santaFe2023.unavailable === false, 'card without badge stays available');
+  check(santaFe2023.year === 2023, 'derives 2023 from regdate', String(santaFe2023.year));
+  check(santaFe2023.minYear === 2024, '2023 Santa Fe still carries the 2024 override');
+
+  const santaFe2024 = rows[3];
+  check(santaFe2024.year === 2024, 'derives 2024 from regdate', String(santaFe2024.year));
+  check(santaFe2024.minYear === 2024, '2024 Santa Fe carries the same override');
 });
 
 // ---------------------------------------------------------------- Toyota
@@ -251,8 +286,6 @@ group('Kia / Honda fail-soft parsers', () => {
 });
 
 // ---------------------------------------------------------------- criteria
-const { applyCriteria } = require('../src/carListings/criteria');
-
 const base = {
   model: 'Santa Fe', brand: 'Hyundai', unavailable: false,
   isPlugInHybrid: true, year: 2022, priceEur: 30000, mileageKm: 100000,
@@ -273,6 +306,13 @@ group('criteria', () => {
     [withField({ isPlugInHybrid: false }), false, 'non-PHEV rejected'],
     [withField({ unavailable: true }), false, 'sold/reserved rejected'],
     [withField({ model: null }), false, 'non-target model rejected'],
+    // Per-model minYear override (Santa Fe -> 2024): base already has
+    // year 2022, so these prove the override — not the global minYear — decides.
+    [withField({ minYear: 2024, year: 2022 }), false, 'override rejects 2022 even though global minYear is 2022'],
+    [withField({ minYear: 2024, year: 2023 }), false, 'override rejects 2023 (still pre-redesign)'],
+    [withField({ minYear: 2024, year: 2024 }), true, 'override accepts 2024'],
+    [withField({ minYear: 2024, year: 2025 }), true, 'override accepts newer than 2024'],
+    [withField({ minYear: null, year: 2022 }), true, 'no override falls back to global minYear'],
   ];
 
   cases.forEach(([listing, expected, label]) => {

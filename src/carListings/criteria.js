@@ -18,8 +18,12 @@ function applyCriteria(listing) {
 
   if (CRITERIA.requirePlugInHybrid && !listing.isPlugInHybrid) reasons.push('not plug-in hybrid');
 
+  // Some models override the global minYear (see Santa Fe in config.js, which
+  // needs 2024+ because the generation changed then) — buildListing() carries
+  // that override on the listing itself so it applies without re-matching here.
+  const effectiveMinYear = listing.minYear != null ? listing.minYear : CRITERIA.minYear;
   if (listing.year == null) reasons.push('year unknown');
-  else if (listing.year < CRITERIA.minYear) reasons.push(`year ${listing.year} < ${CRITERIA.minYear}`);
+  else if (listing.year < effectiveMinYear) reasons.push(`year ${listing.year} < ${effectiveMinYear}`);
 
   if (listing.priceEur == null) reasons.push('price unknown');
   else if (listing.priceEur > CRITERIA.maxPriceEur) reasons.push(`price ${listing.priceEur} > ${CRITERIA.maxPriceEur}`);

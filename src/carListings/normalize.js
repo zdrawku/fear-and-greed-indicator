@@ -2,7 +2,7 @@
  * Shared helpers every source module uses to emit the same listing shape.
  *
  * Canonical listing:
- *   { adId, title, brand, model, url, priceEur, year, mileageKm,
+ *   { adId, title, brand, model, minYear, url, priceEur, year, mileageKm,
  *     isPlugInHybrid, dealer, location, unavailable, sourceId }
  */
 
@@ -50,6 +50,10 @@ function matchWantedModel(text = '') {
  * to the raw model text, a Škoda Octavia or a Hyundai i20 would sail through the
  * model gate and get judged purely on price/year/mileage. The raw name stays
  * available in `title` for display.
+ *
+ * `minYear` carries the matched model's per-model year override (see Santa Fe
+ * in config.js) so criteria.js can apply it without re-matching the model itself.
+ * It's null when the model has no override, meaning "use CRITERIA.minYear".
  */
 function buildListing(raw) {
   const matched = raw.matchedModel || matchWantedModel(`${raw.brand || ''} ${raw.model || ''} ${raw.title || ''}`);
@@ -59,6 +63,7 @@ function buildListing(raw) {
     title: raw.title || null,
     brand: matched ? matched.brand : null,
     model: matched ? matched.model : null,
+    minYear: matched && matched.minYear != null ? matched.minYear : null,
     url: raw.url || null,
     priceEur: toInt(raw.priceEur),
     year: toInt(raw.year),

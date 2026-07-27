@@ -28,11 +28,16 @@ const UNAVAILABLE_MARKERS = [
 /**
  * The models we're shopping for. `patterns` are matched lowercase against a
  * whitespace-normalised haystack, so "Santa Fe", "SANTA FE" and "santa-fe" all hit.
+ *
+ * `minYear` is an optional per-model override of `CRITERIA.minYear`. Santa Fe
+ * needs one because Hyundai redesigned it for MY2024 (the 5th generation,
+ * boxier body) — the pre-2024 car is a different generation, not just an older
+ * copy of the same one, so the global 2022 cutoff is too loose for it.
  */
 const WANTED_MODELS = [
   { brand: 'Skoda', model: 'Kodiaq', patterns: ['kodiaq'] },
   { brand: 'Toyota', model: 'RAV4', patterns: ['rav4', 'rav 4'] },
-  { brand: 'Hyundai', model: 'Santa Fe', patterns: ['santa fe', 'santafe'] },
+  { brand: 'Hyundai', model: 'Santa Fe', patterns: ['santa fe', 'santafe'], minYear: 2024 },
   { brand: 'Kia', model: 'Sorento', patterns: ['sorento'] },
   { brand: 'BMW', model: 'X5', patterns: ['x5'] },
   { brand: 'Honda', model: 'CR-V', patterns: ['cr v', 'crv', 'cr-v'] },
@@ -62,6 +67,17 @@ const MOBILE_BG_SEARCHES = [
     id: 'mobile-bg-skoda-kia-honda',
     label: 'Skoda Kodiaq / Kia Sorento / Honda CR-V',
     url: 'https://www.mobile.bg/obiavi/avtomobili-dzhipove/honda/cr-v/plug-in-hibrid/ot-2022/namira-se-v-balgariya?price1=35000&nup=014&marka1=Kia&model1=Sedona~Seltos~Sorento&marka2=Skoda&model2=Kodiaq',
+  },
+  {
+    // Dedicated Santa Fe search with the site's own year filter set to 2024 —
+    // matches the per-model minYear override above. Kept alongside the combined
+    // search rather than replacing Santa Fe there: the two overlap, but
+    // collectListings() in carNotifier.js dedupes by adId, so the only cost is
+    // a slightly redundant fetch, and this one does the 2024 cutoff server-side
+    // instead of relying purely on our own criteria pass.
+    id: 'mobile-bg-santa-fe-2024',
+    label: 'Hyundai Santa Fe (2024+)',
+    url: 'https://www.mobile.bg/obiavi/avtomobili-dzhipove/hyundai/santa-fe/plug-in-hibrid/avtomatichna/ot-2024/namira-se-v-balgariya?nup=014',
   },
 ];
 
